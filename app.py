@@ -20,7 +20,8 @@ def rename(orig_author):
         "AgentExecutor": "The LLM Brain",
         "LLMChain": "The Assistant",
         "GenerateImage": "DALL-E 3",
-        "ChatOpenAI": "GPT-4.5 Turbo",
+        "ChatOpenAI": "GPT-4 Turbo",
+        "Chatbot": "Coolest App",
     }
     return mapping.get(orig_author, orig_author)
 
@@ -67,33 +68,54 @@ async def start():
 async def setup_agent(settings):
     print("Setup agent with following settings: ", settings)
 
+    # We set up our agent with the user selected (or default) settings here.
     llm = ChatOpenAI(
         temperature=settings["Temperature"],
         streaming=settings["Streaming"],
         model=settings["Model"],
     )
+
+    # We get our memory here, which is used to track the conversation history.
     memory = get_memory()
+
+    # This suffix is used to provide the chat history to the prompt.
     _SUFFIX = "Chat history:\n{chat_history}\n\n" + SUFFIX
 
+    # We initialize our agent here, which is simply being used to decide between responding with text
+    # or an image
     agent = initialize_agent(
-        llm=llm,
-        tools=[generate_image_tool],
-        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,
-        memory=memory,
+        llm=llm,  # our LLM (default is GPT-4 Turbo)
+        tools=[
+            generate_image_tool
+        ],  # our custom tool used to generate images with DALL-E 3
+        agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,  # the agent type we're using today
+        memory=memory,  # our memory!
         agent_kwargs={
-            "suffix": _SUFFIX,
+            "suffix": _SUFFIX,  # adding our chat history suffix
             "input_variables": ["input", "agent_scratchpad", "chat_history"],
         },
     )
-    cl.user_session.set("agent", agent)
+    cl.user_session.set("agent", agent)  # storing our agent in the user session
 
 
 @cl.on_message
 async def main(message: cl.Message):
-    agent = cl.user_session.get("agent")  # type: AgentExecutor
+    """
+    This function is going to intercept all messages sent by the user, and
+    move through our agent flow to generate a response.
+
+    There are ultimately two different options for the agent to respond with:
+    1. Text
+    2. Image
+
+    If the agent responds with text, we simply send the text back to the user.
+
+    If the agent responds with an image, we need to generate the image and send
+    it back to the user.
+    """
+    agent = cl.user_session.get("agent")
     cl.user_session.set("generated_image", None)
 
-    # No async implementation in the Stability AI client, fallback to sync
     res = await cl.make_async(agent.run)(
         input=message.content, callbacks=[cl.LangchainCallbackHandler()]
     )

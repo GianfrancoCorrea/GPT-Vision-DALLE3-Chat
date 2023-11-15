@@ -11,6 +11,10 @@ import chainlit as cl
 
 
 def get_image_name():
+    """
+    We need to keep track of images we generate, so we can reference them later
+    and display them correctly to our users.
+    """
     image_count = cl.user_session.get("image_count")
     if image_count is None:
         image_count = 0
@@ -23,6 +27,13 @@ def get_image_name():
 
 
 def _generate_image(prompt: str):
+    """
+    This function is used to generate an image from a text prompt using
+    DALL-E 3.
+
+    We use the OpenAI API to generate the image, and then store it in our
+    user session so we can reference it later.
+    """
     client = OpenAI()
 
     response = client.images.generate(
@@ -50,8 +61,10 @@ def generate_image(prompt: str):
     return f"Here is {image_name}."
 
 
+# this is our tool - which is what allows our agent to generate images in the first place!
+# the `description` field is of utmost imporance as it is what the LLM "brain" uses to determine
+# which tool to use for a given input.
 generate_image_format = '{{"prompt": "prompt"}}'
-
 generate_image_tool = Tool.from_function(
     func=generate_image,
     name="GenerateImage",
