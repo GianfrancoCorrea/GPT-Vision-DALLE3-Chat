@@ -11,19 +11,36 @@ from chainlit.input_widget import Select, Switch, Slider
 
 @cl.author_rename
 def rename(orig_author):
+    """
+    Rename the author of messages as displayed in the "Thinking" section.
+
+    This is useful to make the chat look more natural, or add some fun to it!
+    """
     mapping = {
-        "LLMChain": "Assistant",
+        "AgentExecutor": "The LLM Brain",
+        "LLMChain": "The Assistant",
+        "GenerateImage": "DALL-E 3",
+        "ChatOpenAI": "GPT-4.5 Turbo",
     }
     return mapping.get(orig_author, orig_author)
 
 
 @cl.cache
 def get_memory():
+    """
+    This is used to track the conversation history and allow our agent to
+    remember what was said before.
+    """
     return ConversationBufferMemory(memory_key="chat_history")
 
 
 @cl.on_chat_start
 async def start():
+    """
+    This is called when the Chainlit chat is started!
+
+    We can add some settings to our application to allow users to select the appropriate model, and more!
+    """
     settings = await cl.ChatSettings(
         [
             Select(
