@@ -38,15 +38,15 @@ That's it! Head to the next step and start building your application!
 <details>
   <summary>🏗️ Building Your GPT-4 Turbo Application with DALL-E 3 Image Generation</summary>
 
-1. Clone [this](https://github.com/AI-Maker-Space/Beyond-ChatGPT/tree/main) repo.
+1. Clone [this](https://github.com/AI-Maker-Space/GPT4AppWithDALLE3) repo.
 
      ``` bash
-     git clone https://github.com/AI-Maker-Space/Beyond-ChatGPT.git
+     git clone https://github.com/AI-Maker-Space/GPT4AppWithDALLE3.git
      ```
 
 2. Navigate inside this repo
      ``` bash
-     cd Beyond-ChatGPT
+     cd GPT4AppWithDALLE3
      ```
 
 3. Install the packages required for this python envirnoment in `requirements.txt`.
@@ -54,12 +54,12 @@ That's it! Head to the next step and start building your application!
      pip install -r requirements.txt
      ``` 
 
-4. Open your `.env` file. Replace the `###` in your `.env` file with your OpenAI Key and save the file.
+4. Export Your OpenAI API Key to your local env. using
      ``` bash
-     OPENAI_API_KEY=sk-###
+     export OPENAI_API_KEY=XXXX
      ```
 
-5. Let's try deploying it locally. Make sure you're in the python environment where you installed Chainlit and OpenAI. Run the app using Chainlit. This may take a minute to run.
+6. Let's try deploying it locally. Make sure you're in the python environment where you installed Chainlit and OpenAI. Run the app using Chainlit. This may take a minute to run.
      ``` bash
      chainlit run app.py -w
      ```
@@ -91,7 +91,7 @@ Awesome! Time to throw it into a docker container and prepare it for shipping!
 2. Run and test the Docker image locally using the `run` command. The `-p`parameter connects our **host port #** to the left of the `:` to our **container port #** on the right.
     
      ``` bash
-     docker run -p 7860:7860 llm-app
+     docker run -p 7860:7860 -e OPENAI_API_KEY=XXXX llm-app
      ```
 
 3. Visit http://localhost:7860 in your browser to see if the app runs correctly.
