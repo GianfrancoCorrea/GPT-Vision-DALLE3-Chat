@@ -2,28 +2,11 @@ from langchain.agents import AgentExecutor, AgentType, initialize_agent
 from langchain.agents.structured_chat.prompt import SUFFIX
 from langchain.chat_models import ChatOpenAI
 from langchain.memory import ConversationBufferMemory
-from tools import generate_image_tool
+from tools import generate_image_tool, describe_image_tool, handle_image_history, wait_for_key
 
 import chainlit as cl
 from chainlit.action import Action
 from chainlit.input_widget import Select, Switch, Slider
-
-
-@cl.author_rename
-def rename(orig_author):
-    """
-    Rename the author of messages as displayed in the "Thinking" section.
-
-    This is useful to make the chat look more natural, or add some fun to it!
-    """
-    mapping = {
-        "AgentExecutor": "The LLM Brain",
-        "LLMChain": "The Assistant",
-        "GenerateImage": "DALL-E 3",
-        "ChatOpenAI": "GPT-4 Turbo",
-        "Chatbot": "Coolest App",
-    }
-    return mapping.get(orig_author, orig_author)
 
 
 @cl.cache
@@ -42,6 +25,8 @@ async def start():
 
     We can add some settings to our application to allow users to select the appropriate model, and more!
     """
+    cl.user_session.set("image_history", [{"role": "system", "content": "You are a helpful assistant. You are developed with GPT-4-vision-preview, if the user uploads an image, you have the ability to understand it."}])
+ 
     settings = await cl.ChatSettings(
         [
             Select(
@@ -62,6 +47,7 @@ async def start():
         ]
     ).send()
     await setup_agent(settings)
+    await wait_for_key()
 
 
 @cl.on_settings_update
@@ -73,6 +59,7 @@ async def setup_agent(settings):
         temperature=settings["Temperature"],
         streaming=settings["Streaming"],
         model=settings["Model"],
+        api_key=cl.user_session.get("api_key"),
     )
 
     # We get our memory here, which is used to track the conversation history.
@@ -86,7 +73,8 @@ async def setup_agent(settings):
     agent = initialize_agent(
         llm=llm,  # our LLM (default is GPT-4 Turbo)
         tools=[
-            generate_image_tool
+            generate_image_tool,
+            describe_image_tool,
         ],  # our custom tool used to generate images with DALL-E 3
         agent=AgentType.STRUCTURED_CHAT_ZERO_SHOT_REACT_DESCRIPTION,  # the agent type we're using today
         memory=memory,  # our memory!
@@ -113,6 +101,12 @@ async def main(message: cl.Message):
     If the agent responds with an image, we need to generate the image and send
     it back to the user.
     """
+
+    if message.elements:
+        cl.user_session.set("image_id", message.elements[0].name)
+        handle_image_history(message)
+        message.content = message.content + ". image_id: " + message.elements[0].name
+
     agent = cl.user_session.get("agent")
     cl.user_session.set("generated_image", None)
 
